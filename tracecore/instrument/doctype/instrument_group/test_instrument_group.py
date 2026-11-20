@@ -56,5 +56,5 @@ class TestInstrumentGroup(IsolatedTestCase):
 			self.assertEqual(len(perms), 1, role)
 			self.assertTrue(perms[0].read, role)
 			self.assertEqual(bool(perms[0].write), can_write, role)
-			self.assertFalse(perms[0].delete, role)
+			self.assertEqual(bool(perms[0].delete), role == "TC R10", role)  # A-165
 		self.assertTrue(get_doc_permissions(doc).get("read"))

@@ -2436,6 +2436,7 @@
  },
  {
   "create": 1,
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "7de8b0b3f0",
@@ -2748,6 +2749,7 @@
  },
  {
   "create": 1,
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "b91a5b9c2d",
@@ -2887,6 +2889,7 @@
   "role": "TC R09"
  },
  {
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "6a5668365c",
@@ -2942,6 +2945,7 @@
  },
  {
   "create": 1,
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "fb9993ae51",
@@ -3012,6 +3016,7 @@
   "write": 1
  },
  {
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "9f6fae8b31",
@@ -3141,6 +3146,7 @@
   "role": "TC R09"
  },
  {
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "d86dec061b",
@@ -4236,6 +4242,7 @@
   "role": "TC R09"
  },
  {
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "ef0c26d0c2",
@@ -4814,6 +4821,7 @@
  },
  {
   "create": 1,
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "4aefa98b8a",
@@ -4946,6 +4954,7 @@
  },
  {
   "create": 1,
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "6cd5b0c594",
@@ -5062,6 +5071,7 @@
   "write": 1
  },
  {
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "6c3be78367",
@@ -5186,6 +5196,7 @@
   "write": 1
  },
  {
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "c2e5f1584a",
@@ -5421,6 +5432,7 @@
   "write": 1
  },
  {
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "6a95ba8f2e",
@@ -6649,6 +6661,17 @@
   "role": "TC R08"
  },
  {
+  "delete": 1,
+  "doctype": "Custom DocPerm",
+  "name": "af7cf78b01",
+  "parent": "Isolation Room",
+  "parentfield": "permissions",
+  "parenttype": "DocType",
+  "permlevel": 0,
+  "read": 1,
+  "role": "TC R10"
+ },
+ {
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "c2f52d38d6",
@@ -6775,6 +6798,7 @@
  },
  {
   "create": 1,
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "8527d6d299",
@@ -6938,6 +6962,7 @@
   "role": "TC R08"
  },
  {
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "d2eb9a214a",
@@ -7086,6 +7111,7 @@
   "role": "TC R02"
  },
  {
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "d001576a4f",
@@ -7382,6 +7408,7 @@
  },
  {
   "create": 1,
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "d7d646ea8d",
@@ -7450,6 +7477,7 @@
   "write": 1
  },
  {
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "eccb9eb3d6",
@@ -7673,6 +7701,7 @@
   "role": "TC R02"
  },
  {
+  "delete": 1,
   "doctype": "Custom DocPerm",
   "export": 1,
   "name": "dbd0b6d176",

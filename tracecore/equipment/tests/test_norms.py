@@ -170,7 +170,9 @@ class TestNorms(IsolatedTestCase):
 		for role in ("TC R01", "TC R02", "TC R03", "TC R04", "TC R05", "TC R06", "TC R09"):
 			self.assertEqual(perms[role].read, 1, msg=role)
 			self.assertFalse(perms[role].write or perms[role].create, msg=role)
-		self.assertFalse(any(row.delete for row in perms.values()))
+		self.assertEqual(
+			{role for role, row in perms.items() if row.delete}, {"TC R10"}
+		)  # A-165: chỉ R10 xóa danh mục chưa có giao dịch (FR-M9-16)
 
 	def test_r02_cannot_set_use_default_norms(self):
 		make_type_norm()

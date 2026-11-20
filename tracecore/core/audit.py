@@ -135,7 +135,7 @@ def on_document_event(doc, method):
 
 
 # Danh mục R10 và Administrator được xóa hẳn khi chưa có giao dịch nào liên kết (FEAT-004, A-37 d, FR-M9-16, A-64,
-# A-164 thêm Employee của M4); người khác chỉ ngừng dùng (nhân viên: trạng thái Left)
+# A-164 thêm Employee của M4, A-165 thêm danh mục còn thiếu); người khác chỉ ngừng dùng (nhân viên: trạng thái Left)
 MASTER_DOCTYPES = frozenset(
 	{
 		"Instrument",
@@ -152,6 +152,26 @@ MASTER_DOCTYPES = frozenset(
 		"Process Program",
 		"Equipment Type Norm",
 		"Employee",
+		# A-165: danh mục còn thiếu nút Xóa (M3, M10, M11–M17, cấu hình nhập/xuất); trừ kỳ báo cáo, sổ mã, mẫu
+		# chuyên môn có phiên bản (submittable), dòng BOM (phiên bản bất biến) và dữ liệu gốc seed tự chèn lại khi migrate
+		"Audit Schedule",
+		"Environment Zone",
+		"Sampling Plan",
+		"Wastewater Point",
+		"IC Indicator",
+		"IC Network Member",
+		"IC Procedure Document",
+		"Linen Type",
+		"Cluster Alert Rule",
+		"Communicable Disease",
+		"Isolation Room",
+		"Import Mapping Profile",
+		"Report Export Profile",
+		"Waste Container",
+		"Waste Quota",
+		"Waste Storage Location",
+		"Waste Treatment Vendor",
+		"Waste Type",
 	}
 )
 MASTER_DELETE_ROLE = "TC R10"

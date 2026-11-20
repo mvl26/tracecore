@@ -1,8 +1,12 @@
-"""FEAT-004, A-37 (c)(d), A-164: xóa danh mục (FR-M9-16) và báo cáo Audit Trail (NFR-SEC-03)."""
+"""FEAT-004, A-37 (c)(d), A-164, A-165: xóa danh mục (FR-M9-16) và báo cáo Audit Trail (NFR-SEC-03)."""
+
+import inspect
 
 import frappe
 from frappe.utils import now_datetime
 
+from tracecore.core.audit import MASTER_DOCTYPES
+from tracecore.setup.permissions import build_custom_docperms
 from tracecore.tests import factories
 from tracecore.tests.factories import make_user
 from tracecore.tests.utils import IsolatedTestCase
@@ -138,6 +142,95 @@ class TestEmployeeDelete(IsolatedTestCase):
 				frappe.delete_doc("Employee", employee, ignore_permissions=True)
 			frappe.set_user("Administrator")
 		self.assertTrue(frappe.db.exists("Employee", employee))
+
+
+# A-165: danh mục TraceCore bổ sung vào phạm vi xóa của R10/Administrator (FR-M9-16)
+A165_MASTERS = {
+	"Audit Schedule",
+	"Environment Zone",
+	"Sampling Plan",
+	"Wastewater Point",
+	"IC Indicator",
+	"IC Network Member",
+	"IC Procedure Document",
+	"Linen Type",
+	"Cluster Alert Rule",
+	"Communicable Disease",
+	"Isolation Room",
+	"Import Mapping Profile",
+	"Report Export Profile",
+	"Waste Container",
+	"Waste Quota",
+	"Waste Storage Location",
+	"Waste Treatment Vendor",
+	"Waste Type",
+}
+
+
+class TestEveryMasterHasDelete(IsolatedTestCase):
+	"""A-165: mọi danh mục trong MASTER_DOCTYPES có nút Xóa cho R10 (và Administrator) và có chặn xóa khi đã dùng."""
+
+	def test_a165_masters_are_deletable_masters(self):
+		self.assertLessEqual(A165_MASTERS, MASTER_DOCTYPES)
+		# kỳ báo cáo và sổ mã không bao giờ xóa
+		self.assertFalse(
+			{"IC Reporting Period", "Code Registry", "Code Range", "Set BOM Item"} & MASTER_DOCTYPES
+		)
+
+	def test_r10_has_delete_on_every_master(self):
+		missing = []
+		for doctype in sorted(MASTER_DOCTYPES):
+			generated = [r for r in build_custom_docperms({doctype}) if r["parent"] == doctype]
+			rows = generated or [
+				{"role": p.role, "delete": p.delete}
+				for p in frappe.get_meta(doctype).permissions
+				if p.permlevel == 0
+			]
+			if not any(r["role"] == "TC R10" and r.get("delete") for r in rows):
+				missing.append(doctype)
+		self.assertEqual(missing, [])
+
+	def test_every_master_runs_block_delete_on_trash(self):
+		hooks = frappe.get_hooks("doc_events")
+		missing = []
+		for doctype in sorted(MASTER_DOCTYPES):
+			handlers = hooks.get(doctype, {}).get("on_trash") or []
+			handlers = handlers if isinstance(handlers, list) else [handlers]
+			cls = frappe.get_doc({"doctype": doctype}).__class__
+			own = inspect.getsource(cls.on_trash) if "on_trash" in cls.__dict__ else ""
+			if "tracecore.core.audit.block_delete" not in handlers and "block_delete" not in own:
+				missing.append(doctype)
+		self.assertEqual(missing, [])
+
+
+class TestA165MasterDelete(IsolatedTestCase):
+	def setUp(self):
+		super().setUp()
+		self.r10 = make_user("a165-r10@example.com", ["TC R10"])
+		self.r02 = make_user("a165-r02@example.com", ["TC R02", "System Manager"])
+		self.addCleanup(frappe.set_user, "Administrator")
+
+	def test_r10_deletes_unused_linen_type_with_audit(self):
+		name = factories.make_linen_type().name
+		frappe.set_user(self.r10)
+		frappe.delete_doc("Linen Type", name)
+		self.assertFalse(frappe.db.exists("Linen Type", name))
+		self.assertTrue(
+			frappe.db.exists("Audit Log", {"ref_doctype": "Linen Type", "ref_name": name, "action": "Delete"})
+		)
+
+	def test_other_roles_cannot_delete_and_used_master_is_blocked(self):
+		unused = factories.make_linen_type().name
+		frappe.set_user(self.r02)
+		with self.assertRaises(frappe.PermissionError):
+			frappe.delete_doc("Linen Type", unused)
+		frappe.set_user("Administrator")
+		waste_type = factories.make_waste_type().name
+		factories.make_waste_vendor([waste_type])
+		frappe.set_user(self.r10)
+		with self.assertRaises(frappe.LinkExistsError):
+			frappe.delete_doc("Waste Type", waste_type)
+		self.assertTrue(frappe.db.exists("Waste Type", waste_type))
 
 
 class TestAuditTrail(IsolatedTestCase):
