@@ -303,9 +303,12 @@ class TestCaseLink(SSITestBase):
 		self.assertEqual(frappe.db.get_value(s.SSI, doc.name, "outcome"), ssi.SSI)
 
 	def test_excluded_case_recomputes_outcome(self):
-		doc = s.make_ssi(self.ward, self.plain.name, surgery="2026-10-20", discharge_date="2026-10-22")
+		# ngày tương đối: cửa sổ theo dõi còn mở, ca bị loại thì kết cục quay về Đang theo dõi
+		doc = s.make_ssi(
+			self.ward, self.plain.name, surgery=add_days(today(), -10), discharge_date=add_days(today(), -8)
+		)
 		frappe.set_user(self.r11)
-		case = ssi.create_case(doc.name, "TSSI", "2026-10-27")
+		case = ssi.create_case(doc.name, "TSSI", add_days(today(), -3))
 		from tracecore.hai_surveillance import cases
 
 		cases.decide(case.name, "Excluded", reason="Không đủ tiêu chí")
